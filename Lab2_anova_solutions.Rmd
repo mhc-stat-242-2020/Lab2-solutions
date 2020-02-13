@@ -1,0 +1,117 @@
+---
+title: "Lab 2 - t tests and confidence intervals for ANOVA"
+author: "Solutions"
+output: pdf_document
+---
+
+## Goals
+
+The goal in this lab is to get some practice working with t-based inference for ANOVA models in R.
+
+## Loading packages
+
+Here are some packages with functionality you may need for this lab.  Run this code chunk now.
+
+```{r message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(mosaic)
+library(gmodels)
+options("pillar.sigfig" = 10) # print 10 significant digits in summarize output
+```
+
+## Reading in the Spock data
+
+The following R code reads in the data set for the Spock Trial and takes a first look at the data.  Run this code now; no need to modify it.
+
+```{r}
+juries <- read_csv("http://www.evanlray.com/data/sleuth3/ex0502_women_jurors.csv")
+dim(juries)
+head(juries)
+juries %>% count(Judge)
+```
+
+## Make some plots
+
+Use this space to make some plots of the Spock trial data.
+
+Whatever plot you choose, it should compare the distributions of the percentages of women for the seven groups.
+
+```{r}
+## side-by-side boxplot
+p1 <- (ggplot(data=juries, aes(x=Judge, y=Percent))
+       + geom_boxplot())
+p1
+
+## histograms
+p2 <- (ggplot(data=juries, aes(x=Percent))
+       + geom_histogram(bins=10)
+       + facet_wrap(~Judge, ncol=2))
+p2
+
+## density plots
+p3 <- (ggplot(data=juries, aes(x=Percent))
+       + geom_density(aes(col=Judge)))
+p3
+```
+
+## t tests and confidence intervals
+
+Use this space to conduct hypothesis tests and find confidence intervals.
+
+(From class notes: "ANOVA: First Examples, Model Statement, t tests")
+
+#### (a) Conduct a hypothesis test of the claim that the mean percent of potential jurors who are women in venires assembled by Spock's judge is the same as the mean percent of potential jurors who are women in venires assembled by Judge A. Also find and report a 95% confidence interval for the difference in means for those two judges. State your null and alternative hypotheses in terms of equations and written sentences. What are the constants $C_1,...,C_I$ to use for this procedure?
+
+*Define notation:*
+
+  - $\mu_1$: mean percent of potential jurors who are women in venires assembled by Judge A
+  - $\mu_2$: mean percent of potential jurors who are women in venires assembled by Judge B
+  - $\mu_3$: mean percent of potential jurors who are women in venires assembled by Judge C
+  - $\mu_4$: mean percent of potential jurors who are women in venires assembled by Judge D
+  - $\mu_5$: mean percent of potential jurors who are women in venires assembled by Judge E
+  - $\mu_6$: mean percent of potential jurors who are women in venires assembled by Judge F
+  - $\mu_7$: mean percent of potential jurors who are women in venires assembled by Spock's Judge
+  
+The constants here are $C_1=1$, $C_7=-1$, and $C_2=\cdots=C_6=0$.
+
+*Hypotheses:*
+
+  - $H_0: \mu_1-\mu_7=0$
+  - $H_A: \mu_1-\mu_7\neq 0$
+    
+*Conduct hypothesis test:*
+
+```{r}
+fit_full <- lm(Percent ~ Judge, data=juries)
+fit.contrast(fit_full, "Judge", c(1,0,0,0,0,0,-1), conf = 0.95)
+```
+
+*Conclusions:* The test statistic is 5.0557, which corresponds to a p-value of $1.05 \times 10^{-5}$. We reject the null hypothesis. There is very strong evidence in favor of the alternative - the mean percent of potential jurors who are women in venires assembled by Judge A is greater than that for Spock's Judge (since the test statistic is positive).
+
+*Confidence Interval:* We are 95% confident that the mean difference in the mean percent of potential jurors who are women in venires assembled by Judge A versus Spock's Judge is between 11.697 and 27.298 percent. For 95% of samples, an interval computed in this way would contain the population parameter.
+
+#### (b) Conduct a hypothesis test of the claim that the mean percent of potential jurors who are women in venires assembled by Spock's judge is the same as the mean percent of potential jurors who are women across all 6 other judges. Also find and report a 95% confidence interval for the difference in means between Spock's judge and the average across all 6 other judges. State your null and alternative hypotheses in terms of equations and written sentences. What are the constants $C_1,...,C_I$ to use for this procedure?
+
+*Define notation:* Same as in (a).
+
+The constants here are $C_1=C_2=\cdots=C_6=1/6$ and $C_7=-1$.
+
+*Hypotheses:*
+
+  - $H_0: 1/6(\mu_1+\mu_2+\mu_3+\mu_4+\mu_5+\mu_6)-\mu_7=0$
+  - $H_A:1/6(\mu_1+\mu_2+\mu_3+\mu_4+\mu_5+\mu_6)-\mu_7\neq 0$
+  
+*Conduct hypothesis test:*
+
+```{r}
+#fit_full <- lm(Percent ~ Judge, data=juries) #we don't need to fit this again
+fit.contrast(fit_full, "Judge", c(1/6,1/6,1/6,1/6,1/6,1/6,-1), conf = 0.95)
+```
+
+
+*Conclusions:* The test statistic is 5.6697, which corresponds to a p-value of $1.49 \times 10^{-6}$. We reject the null hypothesis. There is very strong evidence in favor of the alternative - the mean percent of potential jurors who are women in venires assembled across the other six judges is greater than that for Spock's Judge (since the test statistic is positive).
+
+*Confidence Interval:* We are 95% confident that the mean difference in the mean percent of potential jurors who are women in venires assembled across the other six judges versus Spock's Judge is between 9.635 and 20.322 percent. For 95% of samples, an interval computed in this way would contain the population parameter.
